@@ -1,11 +1,522 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title> My first Electron App </title>
-    </head>
-    <body>
-        <h1> Hello, Electron App </h1>
-        <p> This is your first desktop app built with Electron.</p>
-    </body>
+<html lang="en">
+
+<head>
+    <title>Quick Note Taker</title>
+
+    <style>
+        :root {
+            --bg-primary: #f4f4f4;
+            --bg-sidebar: #2b2b2b;
+            --bg-editor: #ffffff;
+            --bg-note-item: #3a3a3a;
+            --bg-note-item-hover: #4a4a4a;
+            --bg-note-item-active: #316357;
+
+            --text-primary: #000000;
+            --text-sidebar: #ffffff;
+            --text-muted: #999999;
+
+            --border-color: #cccccc;
+
+            --button-bg: #316357;
+            --button-hover: #3d7a6b;
+        }
+
+        body.dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-sidebar: #141414;
+            --bg-editor: #252525;
+            --bg-note-item: #2a2a2a;
+            --bg-note-item-hover: #333333;
+            --bg-note-item-active: #316357;
+
+            --text-primary: #f0f0f0;
+            --text-sidebar: #dddddd;
+            --text-muted: #777777;
+
+            --border-color: #444444;
+
+            --button-bg: #316357;
+            --button-hover: #3d7a6b;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui;
+            background: var(--bg-primary);
+            height: 100vh;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: 220px;
+            background: var(--bg-sidebar);
+            color: var(--text-sidebar);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 8px;
+        }
+
+        #note-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        #note-list::-webkit-scrollbar { width: 4px; }
+        #note-list::-webkit-scrollbar-track { background: transparent; }
+        #note-list::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 4px; }
+
+        /* ── Editor wrapper ── */
+        #editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-editor);
+            position: relative;
+        }
+
+        /* ── Lock screen overlay ── */
+        #lock-screen {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: var(--bg-editor);
+            z-index: 10;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        #lock-screen h2 {
+            color: var(--text-primary);
+            font-size: 20px;
+        }
+
+        #lock-screen .lock-icon {
+            font-size: 52px;
+        }
+
+        #lock-input {
+            padding: 10px 14px;
+            font-size: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-editor);
+            color: var(--text-primary);
+            width: 260px;
+            text-align: center;
+        }
+
+        #lock-input:focus {
+            outline: none;
+            border-color: #316357;
+        }
+
+        #lock-submit {
+            padding: 9px 24px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            background: var(--button-bg);
+        }
+
+        #lock-submit:hover { background: var(--button-hover); }
+
+        #lock-error {
+            color: #e05252;
+            font-size: 13px;
+            min-height: 18px;
+        }
+
+        /* ── Editor content ── */
+        #editor-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 15px;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        #note-title {
+            font-size: 18px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-editor);
+            color: var(--text-primary);
+        }
+
+        #note-title:focus {
+            outline: none;
+            border-color: #316357;
+        }
+
+        /* ── Contenteditable rich-text editor ── */
+        #note {
+            flex: 1;
+            font-size: 16px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-editor);
+            color: var(--text-primary);
+            font-family: inherit;
+            overflow-y: auto;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            cursor: text;
+            min-height: 0;
+        }
+
+        #note:focus {
+            outline: none;
+            border-color: #316357;
+        }
+
+        #note:empty::before {
+            content: attr(data-placeholder);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        #toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ── Buttons ── */
+        button {
+            background: var(--button-bg);
+            color: #fff;
+            border: none;
+            padding: 7px 13px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover  { background: var(--button-hover); }
+        button:active { background: #265049; }
+
+        #new-note {
+            width: 100%;
+            margin-bottom: 6px;
+        }
+
+        /* ── Note list items ── */
+        .note-item {
+            background: var(--bg-note-item);
+            border-radius: 6px;
+            padding: 8px 10px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.12s;
+        }
+
+        .note-item:hover  { background: var(--bg-note-item-hover); }
+        .note-item.active { background: var(--bg-note-item-active); }
+
+        .note-item-title {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 40px;
+            color: var(--text-sidebar);
+        }
+
+        .note-item-date {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .note-item-lock-badge {
+            position: absolute;
+            top: 8px;
+            right: 26px;
+            font-size: 12px;
+            line-height: 1;
+            opacity: 0.75;
+        }
+
+        .note-item-delete {
+            background: transparent;
+            border: none;
+            color: #ff6b6b;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+
+        .note-item:hover .note-item-delete,
+        .note-item.active .note-item-delete { opacity: 1; }
+
+        .note-item-delete:hover { color: #ff4444; background: transparent; }
+
+        /* ── Trash restore button ── */
+        .note-item-restore {
+            background: transparent;
+            border: none;
+            color: #6bcb77;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 0;
+            position: absolute;
+            top: 8px;
+            right: 28px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+
+        .note-item:hover .note-item-restore,
+        .note-item.active .note-item-restore { opacity: 1; }
+
+        .note-item-restore:hover { color: #4caf50; background: transparent; }
+
+        /* ── Status / count ── */
+        #save_status { color: var(--text-muted); font-size: 12px; }
+        #word-count  { color: var(--text-muted); font-size: 12px; }
+
+        #search {
+            padding: 7px;
+            border-radius: 6px;
+            border: none;
+            background: var(--bg-note-item);
+            color: var(--text-sidebar);
+            font-size: 13px;
+            width: 100%;
+        }
+
+        #search:focus { outline: none; }
+
+        /* Lock button — red tint when note is locked */
+        #set-lock { transition: background 0.15s; }
+        #set-lock.locked { background: #8b3a3a; }
+        #set-lock.locked:hover { background: #a84444; }
+
+        /* Sidebar view buttons */
+        .sidebar-view-btn {
+            width: 100%;
+            background: transparent;
+            color: var(--text-sidebar);
+            border: 1px solid #444;
+            text-align: left;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .sidebar-view-btn:hover { background: var(--bg-note-item-hover); }
+        .sidebar-view-btn.active-view { background: var(--bg-note-item-active); border-color: var(--bg-note-item-active); }
+
+        #empty-trash {
+            background: #8b3a3a;
+            width: 100%;
+        }
+        #empty-trash:hover { background: #a84444; }
+
+        /* ── Set-password modal ── */
+        #lock-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        #lock-modal-overlay.visible { display: flex; }
+
+        #lock-modal {
+            background: var(--bg-editor);
+            border-radius: 10px;
+            padding: 28px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 320px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+
+        #lock-modal h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            margin: 0;
+        }
+
+        #lock-modal input {
+            padding: 9px 12px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-editor);
+            color: var(--text-primary);
+            width: 100%;
+        }
+
+        #lock-modal input:focus {
+            outline: none;
+            border-color: #316357;
+        }
+
+        #lock-modal .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        #lock-modal .modal-actions .cancel-btn {
+            background: #555;
+        }
+        #lock-modal .modal-actions .cancel-btn:hover {
+            background: #666;
+        }
+        #lock-modal-error {
+            color: #e05252;
+            font-size: 12px;
+            min-height: 16px;
+        }
+
+        #format-toolbar {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 4px 6px;
+            background: var(--bg-note-item);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .fmt-btn {
+            background: transparent;
+            color: var(--text-sidebar);
+            border: 1px solid transparent;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s;
+        }
+
+        .fmt-btn:hover {
+            background: var(--bg-note-item-hover);
+        }
+
+        .fmt-btn.active {
+            background: var(--button-bg);
+            border-color: var(--button-hover);
+            color: #fff;
+        }
+
+        .fmt-separator {
+            width: 1px;
+            height: 18px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <button id="new-note">New Note</button>
+            <button id="all-notes" class="sidebar-view-btn">📋 All Notes</button>
+            <button id="trash-notes" class="sidebar-view-btn">🗑 Trash</button>
+            <button id="empty-trash" hidden>Empty Trash</button>
+            <input type="text" id="search" placeholder="Search Notes....">
+            <div id="note-list"></div>
+        </div>
+
+        <!-- Editor -->
+        <div id="editor">
+
+            <!-- Per-note lock screen overlay -->
+            <div id="lock-screen">
+                <div class="lock-icon">🔒</div>
+                <h2>Note is locked</h2>
+                <input type="password" id="lock-input" placeholder="Enter note password…">
+                <button id="lock-submit">Unlock</button>
+                <div id="lock-error"></div>
+            </div>
+
+            <!-- Actual editor content -->
+            <div id="editor-content">
+                <input type="text" id="note-title" placeholder="Note title…">
+
+                <div id="format-toolbar">
+                    <button class="fmt-btn" id="fmt-bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                    <button class="fmt-btn" id="fmt-italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                    <button class="fmt-btn" id="fmt-underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                    <div class="fmt-separator"></div>
+                    <button class="fmt-btn" id="fmt-strikethrough" title="Strikethrough"><s>S</s></button>
+                </div>
+
+                <div id="note" contenteditable="true" data-placeholder="Start typing your note…"></div>
+                <div id="toolbar">
+                    <button id="save">Save</button>
+                    <button id="save-as">Save-as</button>
+                    <button id="open-file">Open File</button>
+                    <button id="export-pdf">Export PDF</button>
+                    <button id="font-increase">A+</button>
+                    <button id="font-decrease">A-</button>
+                    <button id="dark-mode-toggle">Dark Mode</button>
+                    <button id="set-lock">🔓 Lock Note</button>
+                </div>
+                <p id="save_status"></p>
+                <p id="word-count">Words: 0 | Characters: 0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set / change / remove password modal -->
+    <div id="lock-modal-overlay">
+        <div id="lock-modal">
+            <h3 id="lock-modal-title">Set Note Password</h3>
+            <input type="password" id="lock-modal-new"     placeholder="New password">
+            <input type="password" id="lock-modal-confirm" placeholder="Confirm password">
+            <input type="password" id="lock-modal-current" placeholder="Current password (to verify)" style="display:none">
+            <div id="lock-modal-error"></div>
+            <div class="modal-actions">
+                <button id="lock-modal-remove"  style="display:none; background:#8b3a3a;">Remove Lock</button>
+                <button id="lock-modal-cancel"  class="cancel-btn">Cancel</button>
+                <button id="lock-modal-confirm-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
 </html>

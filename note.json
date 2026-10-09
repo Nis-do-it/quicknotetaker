@@ -1,0 +1,17 @@
+[
+    {
+        "title": "Grocery List",
+        "content": "Milk, eggs, bread",
+        "date":"2024-04-15"
+    },
+    {
+        "title": "Meeting Notes",
+        "content": "Discuss project updates",
+        "date":"2024-05-16"
+    },
+    {
+        "title": "Project Deadline",
+        "content": "Submit final report",
+        "date":"2027-05-20"
+    }
+]

@@ -1,0 +1,14 @@
+
+(node:16428) UnhandledPromiseRejectionWarning: Error: Failed to load image from path 'C:\Users\DELL\Desktop\my-first-electron-app\Icon.png'
+    at C:\Users\DELL\Desktop\my-first-electron-app\main.js:117:22
+(Use `electron --trace-warnings ...` to show where the warning was created)
+(node:16428) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[16428:0921/133901.369:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[16428:0921/133901.369:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[16428:0921/133901.369:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[16428:0921/133901.369:ERROR:net\disk_cache\disk_cache.cc:290] Unable to create cache
+[16428:0921/133901.369:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[16428:0921/133901.369:ERROR:net\disk_cache\disk_cache.cc:290] Unable to create cache
+[16428:0921/133901.369:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[16428:0921/133901.369:ERROR:net\disk_cache\disk_cache.cc:290] Unable to create cache
+[16428:0921/133901.369:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
